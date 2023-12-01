@@ -1,6 +1,6 @@
 module github.com/maccam912/advent-of-code-2023
 
-go 1.21.4
+go 1.21.3
 
 require github.com/samber/lo v1.38.1
 
