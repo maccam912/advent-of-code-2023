@@ -1,0 +1,12 @@
+package day02
+
+import (
+	"testing"
+	// Import any additional packages needed for testing
+)
+
+func TestA(t *testing.T) {
+}
+
+func TestB(t *testing.T) {
+}

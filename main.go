@@ -7,19 +7,22 @@ import (
 	"strconv"
 
 	"github.com/maccam912/advent-of-code-2023/day01" // Import day packages
+	"github.com/maccam912/advent-of-code-2023/day02"
 	// Import other days similarly
 )
 
 // Define a slice of functions for each day's solution
 var days = []func(){
 	day01.Run, // Function for Day 1
+	day02.Run, // Function for Day 1
 	// Add other days' functions here
 }
 
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Running all days...")
-		for _, dayFunc := range days {
+		for i, dayFunc := range days {
+			fmt.Printf("Day %d:\n", i+1)
 			dayFunc() // Execute each day's solution
 		}
 		return
