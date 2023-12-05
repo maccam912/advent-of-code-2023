@@ -10,15 +10,17 @@ import (
 	"github.com/maccam912/advent-of-code-2023/day02"
 	"github.com/maccam912/advent-of-code-2023/day03"
 	"github.com/maccam912/advent-of-code-2023/day04"
+	"github.com/maccam912/advent-of-code-2023/day05"
 	// Import other days similarly
 )
 
 // Define a slice of functions for each day's solution
 var days = []func(){
-	day01.Run, // Function for Day 1
-	day02.Run, // Function for Day 1
-	day03.Run, // Function for Day 1
-	day04.Run, // Function for Day 1
+	day01.Run,
+	day02.Run,
+	day03.Run,
+	day04.Run,
+	day05.Run,
 	// Add other days' functions here
 }
 
