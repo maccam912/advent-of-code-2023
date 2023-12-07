@@ -108,7 +108,7 @@ func A(path string) int {
 	// Find sum of numbers adjacent to a symbol
 	_, nums, symbols := parseGame(path)
 	adjacentSet := make(map[PartNumber]bool)
-	for coord, _ := range symbols {
+	for coord := range symbols {
 		adjacent := getAdjacentNumbers(nums, coord)
 		for _, num := range adjacent {
 			adjacentSet[num] = true
@@ -126,13 +126,12 @@ func A(path string) int {
 func B(path string) int {
 	game, nums, symbols := parseGame(path)
 	gearRatios := []int{}
-	for coord, _ := range symbols {
-		gearRatio := 1
+	for coord := range symbols {
 		s := game[coord]
 		if s == '*' {
 			adjacent := getAdjacentNumbers(nums, coord)
 			if len(adjacent) == 2 {
-				gearRatio = adjacent[0].Num * adjacent[1].Num
+				gearRatio := adjacent[0].Num * adjacent[1].Num
 				gearRatios = append(gearRatios, gearRatio)
 			}
 		}
