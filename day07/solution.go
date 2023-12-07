@@ -74,68 +74,68 @@ func handClassB(hand Hand) int {
 	// One pair: check for any class having 2
 	// High card: check for any class having 1
 
-	highest_count := 0
-	second_highest_count := 0
+	highestCount := 0
+	secondHighestCount := 0
 	for _, count := range classes {
-		if count > highest_count {
-			second_highest_count = highest_count
-			highest_count = count
-		} else if count > second_highest_count {
-			second_highest_count = count
+		if count > highestCount {
+			secondHighestCount = highestCount
+			highestCount = count
+		} else if count > secondHighestCount {
+			secondHighestCount = count
 		}
 	}
 
-	if highest_count == 5 || highest_count+jCount >= 5 {
+	if highestCount == 5 || highestCount+jCount >= 5 {
 		return 8 // Five of a kind
-	} else if highest_count == 4 || highest_count+jCount >= 4 {
+	} else if highestCount == 4 || highestCount+jCount >= 4 {
 		return 7 // Four of a kind
-	} else if highest_count == 3 && second_highest_count == 2 ||
-		highest_count+jCount >= 3 && second_highest_count == 2 ||
-		highest_count == 3 && second_highest_count+jCount >= 2 ||
-		highest_count+1 >= 3 && second_highest_count+1 >= 2 && jCount >= 2 {
+	} else if highestCount == 3 && secondHighestCount == 2 ||
+		highestCount+jCount >= 3 && secondHighestCount == 2 ||
+		highestCount == 3 && secondHighestCount+jCount >= 2 ||
+		highestCount+1 >= 3 && secondHighestCount+1 >= 2 && jCount >= 2 {
 		return 6 // Full house
-	} else if highest_count == 3 || highest_count+jCount >= 3 {
+	} else if highestCount == 3 || highestCount+jCount >= 3 {
 		return 5 // Three of a kind
-	} else if highest_count == 2 && second_highest_count == 2 ||
-		highest_count+jCount >= 2 && second_highest_count == 2 ||
-		highest_count == 2 && second_highest_count+jCount >= 2 {
+	} else if highestCount == 2 && secondHighestCount == 2 ||
+		highestCount+jCount >= 2 && secondHighestCount == 2 ||
+		highestCount == 2 && secondHighestCount+jCount >= 2 {
 		return 4 // Two pair
-	} else if highest_count == 2 || highest_count+jCount >= 2 {
+	} else if highestCount == 2 || highestCount+jCount >= 2 {
 		return 3 // One pair
 	} else {
 		return 2 // High card
 	}
 }
 
-func orderCardsA(a rune, b rune) int {
+func orderCardsA(runeA rune, runeB rune) int {
 	order := "AKQJT98765432"
 	for i := 0; i < len(order); i++ {
-		if a == rune(order[i]) && b != rune(order[i]) {
+		if runeA == rune(order[i]) && runeB != rune(order[i]) {
 			return 1
 		}
-		if b == rune(order[i]) && a != rune(order[i]) {
+		if runeB == rune(order[i]) && runeA != rune(order[i]) {
 			return -1
 		}
 	}
 	return 0
 }
 
-func orderCardsB(a rune, b rune) int {
+func orderCardsB(runeA rune, runeB rune) int {
 	order := "AKQT98765432J"
 	for i := 0; i < len(order); i++ {
-		if a == rune(order[i]) && b != rune(order[i]) {
+		if runeA == rune(order[i]) && runeB != rune(order[i]) {
 			return 1
 		}
-		if b == rune(order[i]) && a != rune(order[i]) {
+		if runeB == rune(order[i]) && runeA != rune(order[i]) {
 			return -1
 		}
 	}
 	return 0
 }
 
-func orderHandsA(a Hand, b Hand) int {
-	aClass := handClassA(a)
-	bClass := handClassA(b)
+func orderHandsA(handA Hand, handB Hand) int {
+	aClass := handClassA(handA)
+	bClass := handClassA(handB)
 	if aClass > bClass {
 		return 1
 	}
@@ -143,8 +143,8 @@ func orderHandsA(a Hand, b Hand) int {
 		return -1
 	}
 	// Same class, compare cards in order
-	for i := 0; i < len(a.cards); i++ {
-		v := orderCardsA(a.cards[i], b.cards[i])
+	for i := 0; i < len(handA.cards); i++ {
+		v := orderCardsA(handA.cards[i], handB.cards[i])
 		if v != 0 {
 			return v
 		}
@@ -152,9 +152,9 @@ func orderHandsA(a Hand, b Hand) int {
 	return 0
 }
 
-func orderHandsB(a Hand, b Hand) int {
-	aClass := handClassB(a)
-	bClass := handClassB(b)
+func orderHandsB(handA Hand, handB Hand) int {
+	aClass := handClassB(handA)
+	bClass := handClassB(handB)
 	if aClass > bClass {
 		return 1
 	}
@@ -162,8 +162,8 @@ func orderHandsB(a Hand, b Hand) int {
 		return -1
 	}
 	// Same class, compare cards in order
-	for i := 0; i < len(a.cards); i++ {
-		v := orderCardsB(a.cards[i], b.cards[i])
+	for i := 0; i < len(handA.cards); i++ {
+		v := orderCardsB(handA.cards[i], handB.cards[i])
 		if v != 0 {
 			return v
 		}

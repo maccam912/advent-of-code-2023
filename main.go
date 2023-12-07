@@ -35,17 +35,20 @@ func main() {
 			fmt.Printf("Day %d:\n", i+1)
 			dayFunc() // Execute each day's solution
 		}
+
 		return
 	}
 
 	day, err := strconv.Atoi(os.Args[1])
 	if err != nil {
 		fmt.Println("Invalid day:", os.Args[1])
+
 		return
 	}
 
 	if day < 1 || day > len(days) {
 		fmt.Println("Day not implemented:", day)
+
 		return
 	}
 
