@@ -216,18 +216,15 @@ func B(path string) int {
 	}
 
 	insideCount := 0
-	for row := 0; row < 1000; row++ {
-		for col := 0; col < 1000; col++ {
-			// if coord is not a key in in g.values, it isn't part of the loop
-			coord := Coord{row, col}
-			if _, exists := g.values[coord]; exists {
-				continue
-			}
+	for coord, _ := range g.nodes {
+		// if coord is not a key in in g.values, it isn't part of the loop
+		if _, exists := g.values[coord]; exists {
+			continue
+		}
 
-			if g.IsInside(coord) {
-				// fmt.Println(coord)
-				insideCount++
-			}
+		if g.IsInside(coord) {
+			// fmt.Println(coord)
+			insideCount++
 		}
 	}
 	return insideCount

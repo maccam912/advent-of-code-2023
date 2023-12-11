@@ -25,20 +25,20 @@ func TestA(t *testing.T) {
 }
 
 func TestB(t *testing.T) {
-	// answer := B("example_input.txt")
-	// if answer != 1 {
-	// 	t.Errorf("Expected 1, got %d", answer)
-	// }
-	// answer = B("example_input_inside_8.txt")
-	// if answer != 8 {
-	// 	t.Errorf("Expected 8, got %d", answer)
-	// }
-	answer := B("example_input_inside_10.txt")
+	answer := B("example_input.txt")
+	if answer != 1 {
+		t.Errorf("Expected 1, got %d", answer)
+	}
+	answer = B("example_input_inside_8.txt")
+	if answer != 8 {
+		t.Errorf("Expected 8, got %d", answer)
+	}
+	answer = B("example_input_inside_10.txt")
 	if answer != 10 {
 		t.Errorf("Expected 10, got %d", answer)
 	}
-	// answer = B("example_input_inside_4.txt")
-	// if answer != 4 {
-	// 	t.Errorf("Expected 4, got %d", answer)
-	// }
+	answer = B("example_input_inside_4.txt")
+	if answer != 4 {
+		t.Errorf("Expected 4, got %d", answer)
+	}
 }
