@@ -16,6 +16,7 @@ import (
 	"github.com/maccam912/advent-of-code-2023/day08"
 	"github.com/maccam912/advent-of-code-2023/day09"
 	"github.com/maccam912/advent-of-code-2023/day10"
+	"github.com/maccam912/advent-of-code-2023/day11"
 	// Import other days similarly
 )
 
@@ -31,6 +32,7 @@ var days = []func(){
 	day08.Run,
 	day09.Run,
 	day10.Run,
+	day11.Run,
 	// Add other days' functions here
 }
 

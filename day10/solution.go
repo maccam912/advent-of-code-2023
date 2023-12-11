@@ -216,7 +216,7 @@ func B(path string) int {
 	}
 
 	insideCount := 0
-	for coord, _ := range g.nodes {
+	for coord := range g.nodes {
 		// if coord is not a key in in g.values, it isn't part of the loop
 		if _, exists := g.values[coord]; exists {
 			continue
