@@ -1,8 +1,6 @@
 package day12
 
 import (
-	"os"
-	"runtime/pprof"
 	"testing"
 )
 
@@ -50,10 +48,6 @@ func TestA(t *testing.T) {
 }
 
 func TestB(t *testing.T) {
-	f, _ := os.Create("cpu.pprof")
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
-
 	answer := B("example_input.txt")
 	if answer != 525152 {
 		t.Errorf("Expected 525152, got %d", answer)

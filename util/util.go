@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	"github.com/samber/lo"
 )
 
 func ReadLines(path string) ([]string, error) {
@@ -13,7 +15,10 @@ func ReadLines(path string) ([]string, error) {
 		log.Fatal(err)
 	}
 
-	lines := strings.Split(string(contents), "\n")
+	_lines := strings.Split(strings.TrimSpace(string(contents)), "\n")
+	lines := lo.Map(_lines, func(line string, _ int) string {
+		return strings.TrimSpace(line)
+	})
 
 	return lines, nil
 }
