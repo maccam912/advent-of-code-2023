@@ -146,7 +146,7 @@ func Solve(path string, lb, ub int) int {
 				// Not enough, ignore
 				// fmt.Println()
 			} else {
-				// DebugPath(grid, state.path)
+				DebugPath(grid, state.path)
 				return state.cost
 			}
 		}
@@ -223,7 +223,7 @@ func A(path string) int {
 }
 
 func B(path string) int {
-	return Solve(path, 3, 10)
+	return Solve(path, 3, 11)
 }
 
 func Run() {
