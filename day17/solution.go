@@ -1,300 +1,229 @@
 package day17
 
 import (
-	"bufio"
 	"container/heap"
 	"fmt"
-	"os"
 	"strconv"
-	"strings"
+
+	"github.com/maccam912/advent-of-code-2023/util"
 )
-
-type Direction int
-
-const (
-	North Direction = iota
-	East
-	South
-	West
-)
-
-type Node struct {
-	x, y        int
-	dir         Direction
-	consecutive int
-}
 
 type State struct {
-	node     Node
-	heatLoss int
-	priority int
-	index    int
+	path []util.Coord
+	cost int
 }
 
-type PriorityQueue []*State
+type PQ []State
 
-func (pq PriorityQueue) Len() int { return len(pq) }
+func (q PQ) Len() int           { return len(q) }
+func (q PQ) Less(i, j int) bool { return q[i].cost < q[j].cost }
+func (q PQ) Swap(i, j int)      { q[i], q[j] = q[j], q[i] }
+func (q *PQ) Push(x any)        { *q = append(*q, x.(State)) }
+func (q *PQ) Pop() (x any)      { x, *q = (*q)[len(*q)-1], (*q)[:len(*q)-1]; return x }
 
-func (pq PriorityQueue) Less(i, j int) bool {
-	return pq[i].priority < pq[j].priority
+type Grid struct {
+	cells         map[util.Coord]int
+	width, height int
 }
 
-func (pq PriorityQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
-}
-
-func (pq *PriorityQueue) Push(x interface{}) {
-	n := len(*pq)
-	state := x.(*State)
-	state.index = n
-	*pq = append(*pq, state)
-}
-
-func (pq *PriorityQueue) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	state := old[n-1]
-	old[n-1] = nil
-	state.index = -1
-	*pq = old[0 : n-1]
-	return state
-}
-
-func neighbors(n Node, city [][]int, part rune) []Node {
-	var neighbors []Node
-
-	directions := []Direction{North, East, South, West}
-	dx := []int{0, 1, 0, -1}
-	dy := []int{-1, 0, 1, 0}
-
-	for i, dir := range directions {
-		// Skip a 180 degree turn
-		if dir == (n.dir+2)%4 {
-			continue
+func parseInput(path string) Grid {
+	lines, _ := util.ReadLines(path)
+	m := map[util.Coord]int{}
+	for row, line := range lines {
+		for col, char := range line {
+			cost, _ := strconv.Atoi(string(char))
+			m[util.Coord{Row: row, Col: col}] = cost
 		}
-		newX := n.x + dx[i]
-		newY := n.y + dy[i]
+	}
+	return Grid{cells: m, width: len(lines[0]), height: len(lines)}
+}
 
-		// Check if the new position is within the city boundaries
-		if newX < 0 || newX >= len(city[0]) || newY < 0 || newY >= len(city) {
-			continue
+func NoUTurns(path []util.Coord, node util.Coord) bool {
+	if len(path) <= 1 {
+		return true
+	}
+	return path[len(path)-2] != node
+}
+
+func ConsecutiveCount(path []util.Coord, node util.Coord) int {
+	// How many nodes in the same direction have we had?
+	rowDir := node.Row - path[len(path)-1].Row
+	colDir := node.Col - path[len(path)-1].Col
+	dir := util.Coord{Row: rowDir, Col: colDir}
+	count := 1
+
+	for i := len(path) - 2; i >= 0; i-- {
+		a := path[i]
+		b := path[i+1]
+		rowDir := b.Row - a.Row
+		colDir := b.Col - a.Col
+		thisDir := util.Coord{Row: rowDir, Col: colDir}
+		if thisDir != dir {
+			return count
 		}
+		count++
+	}
+	return count
+}
 
-		// Check if the new move is in the same direction and doesn't exceed the limit
-		if part == 'A' {
-			if n.dir == dir && n.consecutive == 3 {
-				continue
+func InBounds(grid Grid, node util.Coord) bool {
+	return node.Row >= 0 && node.Row < grid.height && node.Col >= 0 && node.Col < grid.width
+}
+
+func CheckAll(grid Grid, path []util.Coord, node util.Coord, lb, ub int) bool {
+	status := NoUTurns(path, node) && ConsecutiveCount(path, node) < ub && InBounds(grid, node)
+	// Also check that if a turn is happening, it is more than lb
+	dir := util.Coord{Row: node.Row - path[len(path)-1].Row, Col: node.Col - path[len(path)-1].Col}
+	if len(path) <= 1 {
+		return status
+	}
+	prevDir := util.Coord{Row: path[len(path)-1].Row - path[len(path)-2].Row, Col: path[len(path)-1].Col - path[len(path)-2].Col}
+	if dir != prevDir {
+		// Turning, check lb
+		return status && ConsecutiveCount(path[:len(path)-1], path[len(path)-1]) > lb
+	}
+	return status
+}
+
+func DebugPath(grid Grid, path []util.Coord) {
+	lines := []string{}
+	// First make field of grid costs
+	for row := 0; row < grid.height; row++ {
+		line := ""
+		for col := 0; col < grid.width; col++ {
+			line += strconv.Itoa(grid.cells[util.Coord{Row: row, Col: col}])
+		}
+		lines = append(lines, line)
+	}
+
+	// Then add path
+	for i, node := range path {
+		if i > 0 {
+			// Show an arrow, not an X
+			if node.Row > path[i-1].Row {
+				lines[node.Row] = lines[node.Row][:node.Col] + "v" + lines[node.Row][node.Col+1:]
+			} else if node.Row < path[i-1].Row {
+				lines[node.Row] = lines[node.Row][:node.Col] + "^" + lines[node.Row][node.Col+1:]
+			} else if node.Col > path[i-1].Col {
+				lines[node.Row] = lines[node.Row][:node.Col] + ">" + lines[node.Row][node.Col+1:]
+			} else if node.Col < path[i-1].Col {
+				lines[node.Row] = lines[node.Row][:node.Col] + "<" + lines[node.Row][node.Col+1:]
+			}
+		} else {
+			lines[node.Row] = lines[node.Row][:node.Col] + "X" + lines[node.Row][node.Col+1:]
+		}
+	}
+
+	for _, line := range lines {
+		fmt.Println(line)
+	}
+}
+
+func GetKey(path []util.Coord, node util.Coord) string {
+	consecutiveCount := ConsecutiveCount(path, node)
+	return fmt.Sprintf("%v, %v", path[len(path)-consecutiveCount:], node)
+}
+
+func Solve(path string, lb, ub int) int {
+	grid := parseInput(path)
+	start := util.Coord{Row: 0, Col: 0}
+	end := util.Coord{Row: grid.height - 1, Col: grid.width - 1}
+
+	q := PQ{}
+	heap.Init(&q)
+	heap.Push(&q, State{path: []util.Coord{start}, cost: 0})
+
+	visited := map[string]int{}
+	visitedCount := 1
+	steps := 0
+
+	for q.Len() > 0 {
+		steps++
+		// get lowest cost state
+		state := heap.Pop(&q).(State)
+		if state.path[len(state.path)-1] == end {
+			if ConsecutiveCount(state.path[:len(state.path)-1], end) <= lb {
+				// Not enough, ignore
+				// fmt.Println()
+			} else {
+				// DebugPath(grid, state.path)
+				return state.cost
 			}
 		}
 
-		if part == 'B' {
-			if n.dir != dir && n.consecutive < 4 {
-				// If it is not in the same direction, but has moved less than 4, skip
-				continue
-			}
-			if n.dir == dir && n.consecutive == 10 {
-				continue
-			}
+		lastNode := state.path[len(state.path)-1]
+		// distFromExit := grid.height - lastNode.Row + grid.width - lastNode.Col
+
+		// add neighbors to queue
+		// if steps%100 == 0 {
+		// 	DebugPath(grid, state.path)
+		// 	fmt.Printf("Cost: %d, Dist from exit: %d\n", state.cost, distFromExit)
+		// }
+		// Check up
+		upCoord := util.Coord{Row: lastNode.Row - 1, Col: lastNode.Col}
+		// Check for top row, check that prev node is not up (no 180)
+		key := GetKey(state.path, upCoord)
+		if visited[key] < visitedCount && CheckAll(grid, state.path, upCoord, lb, ub) {
+			pathCopy := make([]util.Coord, len(state.path))
+			copy(pathCopy, state.path)
+			heap.Push(&q, State{
+				path: append(pathCopy, upCoord),
+				cost: state.cost + grid.cells[upCoord],
+			})
+			visited[key]++
 		}
 
-		// Create a new node for the valid neighbor
-		newNode := Node{
-			x:           newX,
-			y:           newY,
-			dir:         dir,
-			consecutive: 1,
+		// Check down
+		downCoord := util.Coord{Row: lastNode.Row + 1, Col: lastNode.Col}
+		// Check for bottom row, check that prev node is not down (no 180)
+		key = GetKey(state.path, downCoord)
+		if visited[key] < visitedCount && CheckAll(grid, state.path, downCoord, lb, ub) {
+			pathCopy := make([]util.Coord, len(state.path))
+			copy(pathCopy, state.path)
+			heap.Push(&q, State{
+				path: append(pathCopy, downCoord),
+				cost: state.cost + grid.cells[downCoord],
+			})
+			visited[key]++
 		}
 
-		// If the new move is in the same direction, increment the consecutive moves
-		if n.dir == dir {
-			newNode.consecutive = n.consecutive + 1
+		// Check left
+		leftCoord := util.Coord{Row: lastNode.Row, Col: lastNode.Col - 1}
+		// Check for left col, check that prev node is not left (no 180)
+		key = GetKey(state.path, leftCoord)
+		if visited[key] < visitedCount && CheckAll(grid, state.path, leftCoord, lb, ub) {
+			pathCopy := make([]util.Coord, len(state.path))
+			copy(pathCopy, state.path)
+			heap.Push(&q, State{
+				path: append(pathCopy, leftCoord),
+				cost: state.cost + grid.cells[leftCoord],
+			})
+			visited[key]++
 		}
 
-		// Filter out any that get to goal in les than 4 moves
-		if part == 'B' && newNode.x == len(city[0])-1 && newNode.y == len(city)-1 && newNode.consecutive < 4 {
-			continue
+		// Check right
+		rightCoord := util.Coord{Row: lastNode.Row, Col: lastNode.Col + 1}
+		// Check for right col, check that prev node is not right (no 180)
+		key = GetKey(state.path, rightCoord)
+		if visited[key] < visitedCount && CheckAll(grid, state.path, rightCoord, lb, ub) {
+			pathCopy := make([]util.Coord, len(state.path))
+			copy(pathCopy, state.path)
+			heap.Push(&q, State{
+				path: append(pathCopy, rightCoord),
+				cost: state.cost + grid.cells[rightCoord],
+			})
+			visited[key]++
 		}
-		neighbors = append(neighbors, newNode)
 	}
-
-	return neighbors
-}
-
-func heuristic(n Node, goal Node) int {
-	return abs(n.x-goal.x) + abs(n.y-goal.y)
-}
-
-func abs(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
-}
-
-func debugCity(city [][]int, visited map[Node]bool) {
-	// Create a new 2D slice with the same dimensions as the city
-	debug := make([][]string, len(city))
-	for i := range debug {
-		debug[i] = make([]string, len(city[i]))
-		for j := range debug[i] {
-			debug[i][j] = "."
-		}
-	}
-
-	// Create a local map to count the visits for each coordinate
-	visitCount := make(map[Node]int)
-
-	// Count the visits for each coordinate
-	for node := range visited {
-		visitCount[Node{x: node.x, y: node.y}]++
-	}
-
-	// Mark the visited nodes in the debug slice
-	for node, count := range visitCount {
-		debug[node.y][node.x] = strconv.Itoa(count)[0:1]
-	}
-
-	// Print the debug slice
-	for _, row := range debug {
-		for _, cell := range row {
-			fmt.Print(cell)
-		}
-		fmt.Println()
-	}
-	fmt.Println()
-	fmt.Println()
-}
-
-// func getPath(goal Node, visited map[Node]bool) []Node {
-// 	var path []Node
-// 	for node := goal; visited[node]; node = Node{x: node.parent_x, y: node.parent_y} {
-// 		path = append([]Node{node}, path...)
-// 	}
-// 	return path
-// }
-
-func shortestPath(city [][]int, start Node, goal Node, part rune) int {
-	// Initialize the priority queue
-	pq := make(PriorityQueue, 0)
-	heap.Init(&pq)
-
-	// Initialize the map of visited nodes
-	visited := make(map[Node]bool)
-
-	// Push the start node into the priority queue
-	startState := &State{node: start, heatLoss: 0, priority: heuristic(start, goal)}
-	heap.Push(&pq, startState)
-
-	// While the priority queue is not empty
-	for pq.Len() > 0 {
-		// Pop the node with the highest priority
-		currState := heap.Pop(&pq).(*State)
-		currNode := currState.node
-		if currNode.x == len(city[0])-1 && currNode.y == len(city)-1 {
-			// path := getPath(&currNode)
-			// fmt.Println(path)
-			return currState.heatLoss
-		}
-
-		// If we have already visited this node, skip it
-		if visited[currNode] {
-			continue
-		}
-
-		// Mark this node as visited
-		visited[currNode] = true
-
-		// For each neighbor of the current node
-		for _, neighbor := range neighbors(currNode, city, part) {
-			// Calculate the heat loss for the neighbor
-			heatLoss := currState.heatLoss + city[neighbor.y][neighbor.x]
-
-			// If we have not visited the neighbor yet, or if the new path to the neighbor is shorter
-			if !visited[neighbor] {
-				// Update the priority and heat loss of the neighbor
-				neighborState := &State{node: neighbor, heatLoss: heatLoss, priority: heatLoss + heuristic(neighbor, goal)}
-				heap.Push(&pq, neighborState)
-			}
-		}
-		// debugCity(city, visited)
-	}
-
-	// If there is no path to the goal, return -1
 	return -1
 }
 
-func parseInput(path string) ([][]int, Node, Node, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, Node{}, Node{}, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	var city [][]int
-	var goal Node
-
-	for y := 0; scanner.Scan(); y++ {
-		line := scanner.Text()
-		row := make([]int, len(line))
-		for x, char := range strings.Split(line, "") {
-			row[x], err = strconv.Atoi(char)
-			if err != nil {
-				return nil, Node{}, Node{}, err
-			}
-		}
-		city = append(city, row)
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, Node{}, Node{}, err
-	}
-
-	// The start is always at the top left
-	start := Node{x: 0, y: 0, dir: East}
-
-	// The goal is always at the bottom right
-	goal = Node{x: len(city[0]) - 1, y: len(city) - 1}
-
-	return city, start, goal, nil
-}
-
 func A(path string) int {
-	// Parse the input file
-	city, start, goal, err := parseInput(path)
-	if err != nil {
-		fmt.Println("Error parsing input:", err)
-		return -1
-	}
-
-	// Find the shortest path from the start node to the goal node
-	shortestPathHeatLoss := shortestPath(city, start, goal, 'A')
-	if shortestPathHeatLoss == -1 {
-		fmt.Println("No path found from start to goal")
-		return -1
-	}
-
-	return shortestPathHeatLoss
+	return Solve(path, 0, 4)
 }
 
 func B(path string) int {
-	// Parse the input file
-	city, start, goal, err := parseInput(path)
-	if err != nil {
-		fmt.Println("Error parsing input:", err)
-		return -1
-	}
-
-	// Find the shortest path from the start node to the goal node
-	shortestPathHeatLoss := shortestPath(city, start, goal, 'B')
-	if shortestPathHeatLoss == -1 {
-		fmt.Println("No path found from start to goal")
-		return -1
-	}
-
-	return shortestPathHeatLoss
+	return Solve(path, 3, 10)
 }
 
 func Run() {

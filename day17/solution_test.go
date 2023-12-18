@@ -2,7 +2,16 @@ package day17
 
 import (
 	"testing"
+
+	"github.com/maccam912/advent-of-code-2023/util"
 )
+
+func TestParseInput(t *testing.T) {
+	grid := parseInput("example_input.txt")
+	if grid.cells[util.Coord{Row: 0, Col: 0}] != 2 {
+		t.Errorf("Expected 2, got %d", grid.cells[util.Coord{Row: 0, Col: 0}])
+	}
+}
 
 func TestA(t *testing.T) {
 	answer := A("example_input.txt")

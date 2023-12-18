@@ -8,6 +8,10 @@ import (
 	"github.com/samber/lo"
 )
 
+type Coord struct {
+	Row, Col int
+}
+
 func ReadLines(path string) ([]string, error) {
 	// read file from path, return utf-8 string of contents
 	contents, err := os.ReadFile(path)
