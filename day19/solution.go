@@ -143,8 +143,85 @@ func A(path string) int {
 	return sum
 }
 
+type Range struct {
+	lo int
+	hi int
+}
+
+type RangePart struct {
+	ranges   map[rune]*Range
+	workflow string
+}
+
+func (clone *RangePart) Clone() RangePart {
+	return RangePart{
+		ranges: map[rune]*Range{
+			'x': &Range{clone.ranges['x'].lo, clone.ranges['x'].hi},
+			'm': &Range{clone.ranges['m'].lo, clone.ranges['m'].hi},
+			'a': &Range{clone.ranges['a'].lo, clone.ranges['a'].hi},
+			's': &Range{clone.ranges['s'].lo, clone.ranges['s'].hi},
+		},
+		workflow: clone.workflow,
+	}
+}
+
+func (rangePart *RangePart) Count() int {
+	numX := rangePart.ranges['x'].hi - rangePart.ranges['x'].lo + 1
+	numM := rangePart.ranges['m'].hi - rangePart.ranges['m'].lo + 1
+	numA := rangePart.ranges['a'].hi - rangePart.ranges['a'].lo + 1
+	numS := rangePart.ranges['s'].hi - rangePart.ranges['s'].lo + 1
+	return numX * numM * numA * numS
+}
+
 func B(path string) int {
-	return 0
+	input := parseInput(path)
+	startRangePart := RangePart{make(map[rune]*Range), "in"}
+	for _, part := range []rune{'x', 'm', 'a', 's'} {
+		startRangePart.ranges[part] = &Range{1, 4000}
+	}
+	rangeParts := []RangePart{startRangePart}
+	accepted := []RangePart{}
+	for len(rangeParts) > 0 {
+		rangePart := rangeParts[0]
+		rangeParts = rangeParts[1:]
+
+		if rangePart.workflow == "R" {
+			// Ignore this one
+			continue
+		} else if rangePart.workflow == "A" {
+			accepted = append(accepted, rangePart)
+			continue
+		}
+		// From here on, it's not A or R
+
+		workflow := input.workflows[rangePart.workflow]
+		for _, rule := range workflow {
+			if !rule.catchall {
+				if rule.lt {
+					a := rangePart.Clone()
+					a.ranges[rule.part].hi = rule.testValue - 1
+					a.workflow = rule.dest
+					rangeParts = append(rangeParts, a)
+					rangePart.ranges[rule.part].lo = rule.testValue
+				} else {
+					a := rangePart.Clone()
+					a.ranges[rule.part].lo = rule.testValue + 1
+					a.workflow = rule.dest
+					rangeParts = append(rangeParts, a)
+					rangePart.ranges[rule.part].hi = rule.testValue
+				}
+			} else {
+				// got to catch all
+				rangePart.workflow = rule.dest
+				rangeParts = append(rangeParts, rangePart)
+			}
+		}
+	}
+	combos := 0
+	for _, rangePart := range accepted {
+		combos += rangePart.Count()
+	}
+	return combos
 }
 
 func Run() {
