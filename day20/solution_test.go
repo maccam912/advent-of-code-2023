@@ -6,14 +6,12 @@ import (
 
 func TestA(t *testing.T) {
 	answer := A("example_input.txt")
-	if answer != 0 {
-		t.Errorf("Expected 0, got %d", answer)
+	if answer != 32000000 {
+		t.Errorf("Expected 32000000, got %d", answer)
 	}
-}
 
-func TestB(t *testing.T) {
-	answer := B("example_input.txt")
-	if answer != 0 {
-		t.Errorf("Expected 0, got %d", answer)
+	answer = A("example_input_2.txt")
+	if answer != 11687500 {
+		t.Errorf("Expected 11687500, got %d", answer)
 	}
 }
