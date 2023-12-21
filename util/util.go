@@ -12,6 +12,15 @@ type Coord struct {
 	Row, Col int
 }
 
+func (coord *Coord) Neighbors() []Coord {
+	return []Coord{
+		{coord.Row - 1, coord.Col},
+		{coord.Row + 1, coord.Col},
+		{coord.Row, coord.Col - 1},
+		{coord.Row, coord.Col + 1},
+	}
+}
+
 func ReadLines(path string) ([]string, error) {
 	// read file from path, return utf-8 string of contents
 	contents, err := os.ReadFile(path)
