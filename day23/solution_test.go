@@ -5,9 +5,9 @@ import (
 )
 
 func TestParseInput(t *testing.T) {
-	grid := parseInput("example_input.txt")
-	if len(grid.grid) != 213 {
-		t.Errorf("Expected 213, got %d", len(grid.grid))
+	grid := parseInput("example_input.txt", 'A')
+	if len(grid.grid) != 55 {
+		t.Errorf("Expected 55, got %d", len(grid.grid))
 	}
 }
 
@@ -20,7 +20,7 @@ func TestA(t *testing.T) {
 
 func TestB(t *testing.T) {
 	answer := B("example_input.txt")
-	if answer != 0 {
-		t.Errorf("Expected 0, got %d", answer)
+	if answer != 154 {
+		t.Errorf("Expected 154, got %d", answer)
 	}
 }

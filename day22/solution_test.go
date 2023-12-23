@@ -70,7 +70,7 @@ func TestA(t *testing.T) {
 }
 
 func TestB(t *testing.T) {
-	answer := B("input.txt")
+	answer := B("example_input.txt")
 	if answer != 7 {
 		t.Errorf("Expected 7, got %d", answer)
 	}
