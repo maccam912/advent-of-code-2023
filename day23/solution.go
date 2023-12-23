@@ -70,6 +70,9 @@ func FindLongestPath(grid *Grid, path []*Node) int {
 
 	// Otherwise, we're not at exit. Keep exploring
 	neighbors := path[len(path)-1].edges
+	if len(neighbors) == 0 {
+		return 0
+	}
 	pathLengths := []int{}
 	for _, neighbor := range neighbors {
 		// Check if we've already been here
@@ -81,9 +84,11 @@ func FindLongestPath(grid *Grid, path []*Node) int {
 			}
 		}
 		if !alreadyVisited {
-			newPath := append(path, neighbor)
+			clonedPath := make([]*Node, len(path)+1)
+			copy(clonedPath, path)
+			clonedPath[len(clonedPath)-1] = neighbor
 
-			pathLengths = append(pathLengths, FindLongestPath(grid, newPath))
+			pathLengths = append(pathLengths, FindLongestPath(grid, clonedPath))
 		}
 	}
 	maxDist := 0
