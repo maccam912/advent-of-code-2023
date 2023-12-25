@@ -5,7 +5,7 @@ import (
 )
 
 func TestParseInput(t *testing.T) {
-	graph := parseInput("input.txt")
+	graph := parseInput("example_input.txt")
 	if len(graph.nodes) != 15 {
 		t.Errorf("Expected 15 nodes, got %d", len(graph.nodes))
 	}
@@ -13,8 +13,8 @@ func TestParseInput(t *testing.T) {
 
 func TestA(t *testing.T) {
 	answer := A("example_input.txt")
-	if answer != 0 {
-		t.Errorf("Expected 0, got %d", answer)
+	if answer != 54 {
+		t.Errorf("Expected 54, got %d", answer)
 	}
 }
 
