@@ -2,22 +2,51 @@ package day24
 
 import (
 	"fmt"
-	"log"
 	"math/big"
 	"strconv"
 	"strings"
 
 	"github.com/maccam912/advent-of-code-2023/util"
 	"github.com/samber/lo"
+	"gonum.org/v1/gonum/mat"
 )
 
 type Hailstone struct {
-	px, py, pz int
-	vx, vy, vz int
+	px, py, pz float64
+	vx, vy, vz float64
+}
+
+func CrossProduct[T int | float64](a, b []T) []T {
+	return []T{
+		a[1]*b[2] - a[2]*b[1],
+		a[2]*b[0] - a[0]*b[2],
+		a[0]*b[1] - a[1]*b[0],
+	}
 }
 
 type Sky struct {
 	hailstones []*Hailstone
+}
+
+func (sky *Sky) GenerateSystemOfEquations() (*mat.Dense, *mat.Dense) {
+	hailstones := sky.hailstones
+	numRows := 3 * len(hailstones)
+	A := mat.NewDense(numRows, 6, nil)
+	B := mat.NewDense(numRows, 1, nil)
+
+	for i, hailstone := range hailstones {
+		pDiff := []float64{-hailstone.px, -hailstone.py, -hailstone.pz} // Difference in position (rock - hailstone)
+		vDiff := []float64{-hailstone.vx, -hailstone.vy, -hailstone.vz} // Difference in velocity (rock - hailstone)
+
+		cross := CrossProduct(pDiff, vDiff)
+
+		for j := 0; j < 3; j++ {
+			A.Set(3*i+j, j, vDiff[j])    // Coefficients for position variables
+			A.Set(3*i+j, 3+j, -pDiff[j]) // Coefficients for velocity variables
+			B.Set(3*i+j, 0, cross[j])
+		}
+	}
+	return A, B
 }
 
 func (s *Sky) CheckIntersections(lo, hi int) int {
@@ -60,23 +89,6 @@ func (s *Sky) intersects(a, b *Hailstone, lo, hi int) bool {
 	return intersectX >= float64(lo) && intersectX <= float64(hi) && intersectY >= float64(lo) && intersectY <= float64(hi)
 }
 
-func (s *Sky) parallel(a, b *Hailstone) bool {
-	// Do this in 3D now
-	return a.vx*b.vy == a.vy*b.vx && a.vx*b.vz == a.vz*b.vx && a.vy*b.vz == a.vz*b.vy
-}
-
-func (s *Sky) FindParallelHailstones() []*Hailstone {
-	parallel := make([]*Hailstone, 0)
-	for i := 0; i < len(s.hailstones); i++ {
-		for j := i + 1; j < len(s.hailstones); j++ {
-			if s.parallel(s.hailstones[i], s.hailstones[j]) {
-				parallel = append(parallel, s.hailstones[i], s.hailstones[j])
-			}
-		}
-	}
-	return parallel
-}
-
 func parseInput(path string) Sky {
 	lines, _ := util.ReadLines(path)
 	sky := Sky{hailstones: make([]*Hailstone, 0)}
@@ -93,44 +105,98 @@ func parseInput(path string) Sky {
 			parsed, _ := strconv.Atoi(strings.TrimSpace(s))
 			return parsed
 		})
-		hailstone := Hailstone{px: pos[0], py: pos[1], pz: pos[2], vx: vel[0], vy: vel[1], vz: vel[2]}
+		hailstone := Hailstone{px: float64(pos[0]), py: float64(pos[1]), pz: float64(pos[2]), vx: float64(vel[0]), vy: float64(vel[1]), vz: float64(vel[2])}
 		sky.hailstones = append(sky.hailstones, &hailstone)
 	}
 
 	return sky
 }
 
-func (s *Sky) TranslateToFirstHailstoneReference() *Sky {
-	if len(s.hailstones) == 0 {
-		return &Sky{hailstones: []*Hailstone{}}
-	}
+// func createMatrix(sky Sky, numRows int) [][]int {
+// 	matrix := make([][]int, numRows)
 
-	// Get the first hailstone's position and velocity
-	first := s.hailstones[0]
-	refPx, refPy, refPz := first.px, first.py, first.pz
-	refVx, refVy, refVz := first.vx, first.vy, first.vz
+// 	for i := 0; i < numRows; i++ {
+// 		hailstone := sky.hailstones[i]
 
-	// Create a new slice to hold the translated hailstones
-	translatedHailstones := make([]*Hailstone, len(s.hailstones))
+// 		matrix[i] = []int{
+// 			-dy,
+// 			dx,
+// 			y,
+// 			-x,
+// 			y*dx - x*dy,
+// 		}
+// 	}
 
-	for i, h := range s.hailstones {
-		// Translate position and velocity
-		newPx := h.px - refPx
-		newPy := h.py - refPy
-		newPz := h.pz - refPz
-		newVx := h.vx - refVx
-		newVy := h.vy - refVy
-		newVz := h.vz - refVz
+// 	return matrix
+// }
 
-		// Create a new Hailstone with translated values
-		translatedHailstones[i] = &Hailstone{
-			px: newPx, py: newPy, pz: newPz,
-			vx: newVx, vy: newVy, vz: newVz,
+// func convertToBigRat(matrix [][]int) [][]*big.Rat {
+// 	rows := len(matrix)
+// 	cols := len(matrix[0])
+// 	ratMatrix := make([][]*big.Rat, rows)
+// 	for i := range ratMatrix {
+// 		ratMatrix[i] = make([]*big.Rat, cols)
+// 		for j := range ratMatrix[i] {
+// 			ratMatrix[i][j] = new(big.Rat).SetInt(big.NewInt(int64(matrix[i][j])))
+// 		}
+// 	}
+// 	return ratMatrix
+// }
+
+func gaussianElimination(matrix [][]*big.Rat) [][]*big.Rat {
+	rows := len(matrix)
+	cols := len(matrix[0])
+
+	for i := 0; i < rows; i++ {
+		// Find the pivot for the column
+		pivotRow := i
+		for j := i + 1; j < rows; j++ {
+			a := matrix[j][i]
+			b := matrix[pivotRow][i]
+			absB := matrix[pivotRow][i].Abs(b)
+			cmp := matrix[j][i].Cmp(absB)
+
+			if a != nil && b != nil && cmp > 0 {
+				pivotRow = j
+			}
+		}
+
+		// Swap the current row with the pivot row
+		matrix[i], matrix[pivotRow] = matrix[pivotRow], matrix[i]
+
+		// Ensure pivot is non-nil and non-zero
+		if matrix[i][i] == nil || matrix[i][i].Sign() == 0 {
+			continue // Skip this column
+		}
+
+		// Normalize the pivot row
+		pivot := new(big.Rat).Set(matrix[i][i])
+		for k := 0; k < cols; k++ {
+			if matrix[i][k] != nil {
+				matrix[i][k].Quo(matrix[i][k], pivot)
+			} else {
+				matrix[i][k] = new(big.Rat) // Initialize to 0
+			}
+		}
+
+		// Eliminate all other elements in the current column
+		for j := 0; j < rows; j++ {
+			if j != i && matrix[j][i] != nil {
+				factor := new(big.Rat).Set(matrix[j][i])
+				for k := 0; k < cols; k++ {
+					if matrix[i][k] != nil {
+						term := new(big.Rat).Mul(factor, matrix[i][k])
+						if matrix[j][k] == nil {
+							matrix[j][k] = new(big.Rat) // Initialize to 0
+						}
+						matrix[j][k].Sub(matrix[j][k], term)
+					}
+				}
+			}
 		}
 	}
 
-	// Return a new Sky with the translated hailstones
-	return &Sky{hailstones: translatedHailstones}
+	return matrix
 }
 
 func A(path string) int {
@@ -139,72 +205,21 @@ func A(path string) int {
 	return count
 }
 
-func elim(m [][]*big.Rat) [][]*big.Rat {
-	size := len(m)
-	for i := 0; i < size; i++ {
-		t := new(big.Rat).Set(m[i][i])
-		for k := range m[i] {
-			m[i][k].Quo(m[i][k], t)
-		}
-		for j := i + 1; j < size; j++ {
-			t := new(big.Rat).Set(m[j][i])
-			for k := range m[j] {
-				m[j][k].Sub(m[j][k], new(big.Rat).Mul(t, m[i][k]))
-			}
-		}
+// SolveSystem solves the system of equations Ax = B.
+func SolveSystem(A, B *mat.Dense) mat.Dense {
+	var x mat.Dense
+	if err := x.Solve(A, B); err != nil {
+		fmt.Println("Failed to solve the system:", err)
 	}
-	for i := size - 1; i >= 0; i-- {
-		for j := 0; j < i; j++ {
-			t := new(big.Rat).Set(m[j][i])
-			for k := range m[j] {
-				m[j][k].Sub(m[j][k], new(big.Rat).Mul(t, m[i][k]))
-			}
-		}
-	}
-	return m
+	return x
 }
 
 func B(path string) int {
 	sky := parseInput(path)
-
-	// Assuming you have at least 5 hailstones
-	if len(sky.hailstones) < 5 {
-		log.Fatal("Not enough hailstones")
-	}
-
-	// Create a 4x5 matrix to hold the coefficients of the system of equations
-	m := make([][]*big.Rat, 4)
-	for i := range m {
-		m[i] = make([]*big.Rat, 5)
-		for j := range m[i] {
-			m[i][j] = new(big.Rat)
-		}
-	}
-
-	// Fill the matrix with coefficients from the first 4 hailstones
-	for i, hailstone := range sky.hailstones[:4] {
-		m[i][0].SetInt64(int64(hailstone.vx - sky.hailstones[4].vx))
-		m[i][1].SetInt64(int64(hailstone.vy - sky.hailstones[4].vy))
-		m[i][2].SetInt64(int64(sky.hailstones[4].py - hailstone.py))
-		m[i][3].SetInt64(int64(hailstone.px - sky.hailstones[4].px))
-		m[i][4].Set(
-			new(big.Rat).Sub(
-				new(big.Rat).Mul(new(big.Rat).SetInt64(int64(hailstone.px)), new(big.Rat).SetInt64(int64(sky.hailstones[4].vy))),
-				new(big.Rat).Mul(new(big.Rat).SetInt64(int64(hailstone.py)), new(big.Rat).SetInt64(int64(sky.hailstones[4].vx))),
-			),
-		)
-	}
-
-	// Perform Gaussian elimination on the matrix
-	m = elim(m)
-
-	// Extract the solution from the last column of the matrix
-	solution := make([]big.Rat, 4)
-	for i := range solution {
-		solution[i] = *m[i][4]
-	}
-
-	fmt.Println(solution)
+	A, B := sky.GenerateSystemOfEquations()
+	solved := SolveSystem(A, B)
+	fmt.Printf("%v\n\n%v\n", mat.Formatted(A), mat.Formatted(B))
+	fmt.Printf("Solved: %v\n", mat.Formatted(&solved))
 	return 0
 }
 
